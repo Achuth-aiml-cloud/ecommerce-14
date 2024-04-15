@@ -8,10 +8,12 @@
     background: white;
 }
 .nav-logo{
-    width: 200px;
+    width: 140px;
+    cursor: pointer;
 }
 .nav-profile{
     width: 75px;
+    cursor: pointer;
 }
 @media(max-width:800px){
     .navbar{

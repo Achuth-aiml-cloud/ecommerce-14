@@ -1,80 +1,72 @@
 import React, { useState } from "react";
 import "./CSS/LoginSignup.css";
+import { auth, db } from '../firebase';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
 
 const LoginSignup = () => {
-
-  const [state,setState] = useState("Login");
-  const [formData,setFormData] = useState({username:"",email:"",password:""});
+  const [isLogin, setIsLogin] = useState(true);
+  const [formData, setFormData] = useState({ name: "", email: "", password: "" });
 
   const changeHandler = (e) => {
-    setFormData({...formData,[e.target.name]:e.target.value});
-    }
-
-  const login = async () => {
-    let dataObj;
-    await fetch('http://localhost:4000/login', {
-      method: 'POST',
-      headers: {
-        Accept:'application/form-data',
-        'Content-Type':'application/json',
-      },
-      body: JSON.stringify(formData),
-    })
-      .then((resp) => resp.json())
-      .then((data) => {dataObj=data});
-      console.log(dataObj);
-      if (dataObj.success) {
-        localStorage.setItem('auth-token',dataObj.token);
-        window.location.replace("/");
-      }
-      else
-      {
-        alert(dataObj.errors)
-      }
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   }
 
-  const signup = async () => {
-    let dataObj;
-    await fetch('http://localhost:4000/signup', {
-      method: 'POST',
-      headers: {
-        Accept:'application/form-data',
-        'Content-Type':'application/json',
-      },
-      body: JSON.stringify(formData),
-    })
-      .then((resp) => resp.json())
-      .then((data) => {dataObj=data});
+  const handleLogin = async () => {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      console.log("User logged in:", userCredential.user);
+      localStorage.setItem('auth-token', userCredential.user.accessToken);
+      window.location.replace("/");
+    } catch (error) {
+      alert(error.message);
+    }
+  }
 
-      if (dataObj.success) {
-        localStorage.setItem('auth-token',dataObj.token);
-        window.location.replace("/");
-      }
-      else
-      {
-        alert(dataObj.errors)
-      }
+  const handleSignup = async () => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      console.log("User registered:", userCredential.user);
+
+      // Adding user data to Firestore
+      await setDoc(doc(db, "users", userCredential.user.uid), {
+        name: formData.name,
+        email: formData.email,
+        // Additional fields can be added here
+      });
+
+      localStorage.setItem('auth-token', userCredential.user.accessToken);
+      window.location.replace("/");
+    } catch (error) {
+      alert(error.message);
+    }
   }
 
   return (
     <div className="loginsignup">
       <div className="loginsignup-container">
-        <h1>{state}</h1>
+        <h1>{isLogin ? "Login" : "Sign Up"}</h1>
         <div className="loginsignup-fields">
-          {state==="Sign Up"?<input type="text" placeholder="Your name" name="username" value={formData.username} onChange={changeHandler}/>:<></>}
+          {!isLogin && <input type="text" placeholder="Your name" name="name" value={formData.name} onChange={changeHandler}/>}
           <input type="email" placeholder="Email address" name="email" value={formData.email} onChange={changeHandler}/>
           <input type="password" placeholder="Password" name="password" value={formData.password} onChange={changeHandler}/>
         </div>
 
-        <button onClick={()=>{state==="Login"?login():signup()}}>Continue</button>
+        <button onClick={isLogin ? handleLogin : handleSignup}>
+          {isLogin ? "Login" : "Sign Up"}
+        </button>
 
-        {state==="Login"?
-        <p className="loginsignup-login">Create an account? <span onClick={()=>{setState("Sign Up")}}>Click here</span></p>
-        :<p className="loginsignup-login">Already have an account? <span onClick={()=>{setState("Login")}}>Login here</span></p>}
+        <div className="loginsignup-switch">
+          {isLogin ?
+            <p>Create an account? <span onClick={() => setIsLogin(false)}>Sign up here</span></p>
+            :
+            <p>Already have an account? <span onClick={() => setIsLogin(true)}>Login here</span></p>
+          }
+        </div>
 
         <div className="loginsignup-agree">
-          <input type="checkbox" name="" id="" />
-          <p>By continuing, i agree to the terms of use & privacy policy.</p>
+          <input type="checkbox" name="terms" id="terms" />
+          <label htmlFor="terms">By continuing, I agree to the Terms of Use & Privacy Policy.</label>
         </div>
       </div>
     </div>
