@@ -3,20 +3,32 @@ import "./ProductDisplay.css";
 import star_icon from "../Assets/star_icon.png";
 import star_dull_icon from "../Assets/star_dull_icon.png";
 import { ShopContext } from "../../Context/ShopContext";
+import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 
 const ProductDisplay = (props) => {
+  const { product } = props;
+  const { addToCart } = useContext(ShopContext);
 
-  const {product} = props;
-  const {addToCart} = useContext(ShopContext);
+  // Function to get image URL from Firebase Storage
+  const getImageUrl = async (imagePath) => {
+    const storage = getStorage();
+    const imageRef = ref(storage, imagePath);
+    try {
+      const imageUrl = await getDownloadURL(imageRef);
+      return imageUrl;
+    } catch (error) {
+      console.error('Error getting image URL:', error);
+      return null;
+    }
+  };
 
   return (
     <div className="productdisplay">
       <div className="productdisplay-left">
         <div className="productdisplay-img-list">
-          <img src={product.image} alt="img" />
-          <img src={product.image} alt="img" />
-          <img src={product.image} alt="img" />
-          <img src={product.image} alt="img" />
+          {[1, 2, 3, 4].map((index) => (
+            <img key={index} src={product.image} alt="img" />
+          ))}
         </div>
         <div className="productdisplay-img">
           <img className="productdisplay-main-img" src={product.image} alt="img" />
@@ -25,10 +37,9 @@ const ProductDisplay = (props) => {
       <div className="productdisplay-right">
         <h1>{product.name}</h1>
         <div className="productdisplay-right-stars">
-          <img src={star_icon} alt="" />
-          <img src={star_icon} alt="" />
-          <img src={star_icon} alt="" />
-          <img src={star_icon} alt="" />
+          {[...Array(4)].map((_, index) => (
+            <img key={index} src={star_icon} alt="" />
+          ))}
           <img src={star_dull_icon} alt="" />
           <p>(122)</p>
         </div>
@@ -51,7 +62,7 @@ const ProductDisplay = (props) => {
             <div>XXL</div>
           </div>
         </div>
-        <button onClick={()=>{addToCart(product.id)}}>ADD TO CART</button>
+        <button onClick={() => { addToCart(product.id) }}>ADD TO CART</button>
         <p className="productdisplay-right-category"><span>Category :</span> Women, T-shirt, Crop Top</p>
         <p className="productdisplay-right-category"><span>Tags :</span> Modern, Latest</p>
       </div>

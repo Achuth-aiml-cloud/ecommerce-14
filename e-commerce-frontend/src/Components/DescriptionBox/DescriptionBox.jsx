@@ -1,7 +1,29 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import "./DescriptionBox.css";
+import { collection, getFirestore, getDocs } from 'firebase/firestore';
 
 const DescriptionBox = () => {
+  const [description, setDescription] = useState("");
+
+  useEffect(() => {
+    const fetchDescription = async () => {
+      try {
+        const db = getFirestore();
+        const descriptionCollectionRef = collection(db, 'descriptions');
+        const descriptionSnapshot = await getDocs(descriptionCollectionRef);
+        const descriptionData = descriptionSnapshot.docs.map(doc => doc.data());
+        // For simplicity, assuming there's only one description document
+        if (descriptionData.length > 0) {
+          setDescription(descriptionData[0].content);
+        }
+      } catch (error) {
+        console.error('Error fetching description:', error);
+      }
+    };
+
+    fetchDescription();
+  }, []);
+
   return (
     <div className="descriptionbox">
       <div className="descriptionbox-navigator">
@@ -9,21 +31,7 @@ const DescriptionBox = () => {
         <div className="descriptionbox-nav-box fade">Reviews (122)</div>
       </div>
       <div className="descriptionbox-description">
-        <p>
-          An e-commerce website is an online platform that facilitates the
-          buying and selling of products or services over the internet. It
-          serves as a virtual marketplace where businesses and individuals can
-          showcase their products, interact with customers, and conduct
-          transactions without the need for a physical presence. E-commerce
-          websites have gained immense popularity due to their convenience,
-          accessibility, and the global reach they offer.
-        </p>
-        <p>
-          E-commerce websites typically display products or services along with
-          detailed descriptions, images, prices, and any available variations
-          (e.g., sizes, colors). Each product usually has its own dedicated page
-          with relevant information.
-        </p>
+        <p>{description}</p>
       </div>
     </div>
   );

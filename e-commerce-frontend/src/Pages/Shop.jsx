@@ -1,38 +1,75 @@
-import React, { useEffect, useState } from 'react'
-import Hero from '../Components/Hero/Hero'
-import Popular from '../Components/Popular/Popular'
-import Offers from '../Components/Offers/Offers'
-import NewCollections from '../Components/NewCollections/NewCollections'
-import NewsLetter from '../Components/NewsLetter/NewsLetter'
+import React, { useState, useEffect } from 'react';
+import { getStorage, ref, listAll, getDownloadURL } from 'firebase/storage';
 
-const Shop = () => {
+const SearchProduct = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [products, setProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
-  const [popular, setPopular] = useState([]);
-  const [newcollection, setNewCollection] = useState([]);
+  useEffect(() => {
+    // Fetch products from Firebase Storage
+    const fetchProducts = async () => {
+      try {
+        const storage = getStorage();
+        const productsRef = ref(storage, 'products');
+        const productsList = await listAll(productsRef);
+        const productUrls = await Promise.all(productsList.items.map(async item => {
+          const url = await getDownloadURL(item);
+          return { url, name: item.name.split('.')[0] }; // Assuming product name is the file name
+        }));
+        setProducts(productUrls);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      }
+    };
 
-  const fetchInfo = () => { 
-    fetch('http://localhost:4000/popularinwomen') 
-            .then((res) => res.json()) 
-            .then((data) => setPopular(data))
-    fetch('http://localhost:4000/newcollections') 
-            .then((res) => res.json()) 
-            .then((data) => setNewCollection(data))
-    }
+    fetchProducts();
+  }, []);
 
-    useEffect(() => {
-      fetchInfo();
-    }, [])
+  useEffect(() => {
+    // Filter products based on search term
+    const filtered = products.filter(product =>
+      product.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredProducts(filtered);
+  }, [searchTerm, products]);
 
+  const handleChange = (e) => {
+    setSearchTerm(e.target.value);
+    setShowSuggestions(true);
+  };
+
+  const handleItemClick = (name) => {
+    setSearchTerm(name);
+    setShowSuggestions(false);
+  };
+
+  const handleSearch = () => {
+    // Perform search action here, e.g., redirect to search results page
+    console.log('Perform search for:', searchTerm);
+  };
 
   return (
     <div>
-      <Hero/>
-      <Popular data={popular}/>
-      <Offers/>
-      <NewCollections data={newcollection}/>
-      <NewsLetter/>
+      <input
+        type="text"
+        placeholder="Search products..."
+        value={searchTerm}
+        onChange={handleChange}
+      />
+      <button onClick={handleSearch}>Search</button>
+      {showSuggestions && (
+        <ul>
+          {filteredProducts.map(product => (
+            <li key={product.url} onClick={() => handleItemClick(product.name)}>
+              {product.name}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
-  )
-}
+  );
+};
 
-export default Shop
+export default SearchProduct;
